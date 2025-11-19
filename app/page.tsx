@@ -21,6 +21,7 @@ type Message = {
   citations?: { title?: string; url?: string }[];
   providers?: Provider[];
   data?: any; // keeps raw validated payload from backend (eligibility, cost, etc.)
+  intent?: string; // <-- added to label Docs vs other intents in UI
 };
 
 type CostAnswer = {
@@ -160,7 +161,11 @@ function CostResults({ data }: { data: CostData }) {
                 </thead>
                 <tbody>
                 {answers
-                    .sort((a, b) => (order[a.age_group as keyof typeof order] || 9) - (order[b.age_group as keyof typeof order] || 9))
+                    .sort(
+                        (a, b) =>
+                            (order[a.age_group as keyof typeof order] || 9) -
+                            (order[b.age_group as keyof typeof order] || 9)
+                    )
                     .map((a, i) => (
                         <tr key={i} className="border-t">
                           <td className="p-2 capitalize">{a.age_group}</td>
@@ -301,7 +306,7 @@ export default function Home() {
   // Cost form state
   const [county, setCounty] = useState("");
   const [countyFips, setCountyFips] = useState("");
-  const [age, setAge] = useState("");       // '', 'infant','toddler','preschool'
+  const [age, setAge] = useState(""); // '', 'infant','toddler','preschool'
   const [setting, setSetting] = useState(""); // '', 'center','family'
   const [metric, setMetric] = useState<"median" | "p75">("median");
   const [units, setUnits] = useState<"weekly" | "monthly">("weekly");
@@ -312,12 +317,12 @@ export default function Home() {
 
   // Reset chat when changing intent (optional QoL)
   useEffect(() => {
-    // keep messages for now; comment in if you prefer clearing:
-    // setMessages([]);
+    // setMessages([]); // uncomment if you want a clean slate per intent
   }, [intent]);
 
   async function send() {
-    const q = input.trim() || (intent === "COST" ? "Cost estimate" : "");
+    const q =
+        input.trim() || (intent === "COST" ? "Cost estimate" : "");
     if (!q) return;
 
     setLoading(true);
@@ -361,16 +366,18 @@ export default function Home() {
           citations: data.citations || [],
           providers: Array.isArray(data.providers) ? data.providers : undefined,
           data: data.data ?? undefined,
+          intent: data.intent, // <-- store intent on message to label sections
         };
         setMessages((m) => [...m, msg]);
       } else if (data.raw) {
-        setMessages((m) => [...m, { role: "assistant", content: data.raw }]);
+        setMessages((m) => [...m, { role: "assistant", content: data.raw, intent: data.intent }]);
       } else {
         setMessages((m) => [
           ...m,
           {
             role: "assistant",
             content: `Sorry—something went wrong.\n\n${data.error ?? "Unknown error"}`,
+            intent: data.intent,
           },
         ]);
       }
@@ -395,7 +402,9 @@ export default function Home() {
   const placeholder =
       intent === "COST"
           ? "Optional: add notes (e.g., 'center toddler in Allegheny') then click Send"
-          : "Ask a question about ratios, eligibility, etc.";
+          : intent === "DOCUMENTATION"
+              ? "Ask for a document (e.g., 'PA Code § 3042.31 pdf', 'Keystone STARS policy forms')"
+              : "Ask a question about ratios, eligibility, etc.";
 
   return (
       <main className="min-h-screen bg-neutral-50 flex flex-col">
@@ -468,10 +477,12 @@ export default function Home() {
                           <CostResults data={m.data as CostData} />
                       )}
 
-                  {/* Citations (from RAG paths) */}
+                  {/* Citations / Documents */}
                   {m.citations && m.citations.length > 0 && (
                       <div className="mt-2 border-t pt-2">
-                        <div className="text-xs font-semibold mb-1">Citations</div>
+                        <div className="text-xs font-semibold mb-1">
+                          {m.intent === "DOCUMENTATION" ? "Documents" : "Citations"}
+                        </div>
                         <ul className="list-disc pl-5 text-sm">
                           {m.citations.map((c, j) => (
                               <li key={j}>
