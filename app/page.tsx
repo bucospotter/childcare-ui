@@ -418,8 +418,8 @@ export default function Home() {
                 onChange={(e) => setState(e.target.value as any)}
             >
               <option value="PA">Pennsylvania</option>
-              <option value="MA">Massachusetts</option>
-              <option value="WV">West Virginia</option>
+              <option value="MA" disabled>Massachusetts</option>
+              <option value="WV" disabled>West Virginia</option>
             </select>
 
             <select
@@ -431,7 +431,7 @@ export default function Home() {
               <option value="LOOKUP_PROVIDER">Find providers</option>
               <option value="CHECK_ELIGIBILITY">Eligibility</option>
               <option value="COST">Cost</option>
-              <option value="DOCUMENTATION">Docs</option>
+              <option value="DOCUMENTATION" disabled>Docs</option>
             </select>
           </div>
 
